@@ -36,7 +36,7 @@ namespace NsUserManager
                 options.SPOptions.EntityId = new Sustainsys.Saml2.Metadata.EntityId(samlConfig["EntityId"]);
                 options.Notifications.GetPublicOrigin = context =>
                 {
-                    Uri updated = new UriBuilder(context.ApplicationUrl.Scheme, context.ApplicationUrl.Host, context.ApplicationUrl.Port).Uri;
+                    Uri updated = new UriBuilder("https", context.ApplicationUrl.Host, context.ApplicationUrl.Port).Uri;
                     return updated;
                 };
                 options.IdentityProviders.Add(
