@@ -25,6 +25,7 @@ ENV APPSETTINGS__Netskope__ExternalIdPrefix=netskope-manager-
 ENV APPSETTINGS__Saml__EntityId=
 ENV APPSETTINGS__Saml__IdpId=
 ENV APPSETTINGS__Saml__MetadataUrl=
+ENV APPSETTINGS__Saml__PublicOrigin=
 
 # Expose the port your application runs on
 EXPOSE 8080
