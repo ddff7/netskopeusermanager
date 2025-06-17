@@ -5,7 +5,7 @@
 <div class="bb-page">
 
     <Sidebar @ref="sidebar"
-             IconName="IconName.BootstrapFill"
+             IconName="IconName.ShieldFill"
              Title="Netskope SCIM"
              DataProvider="SidebarDataProvider" />
 
@@ -34,8 +34,8 @@
         navItems = new List<NavItem>
                    {
                        new NavItem { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Home", Match=NavLinkMatch.All},
-                       new NavItem { Id = "2", Href = "/users", IconName = IconName.PlusSquareFill, Text = "User"},
-                       new NavItem { Id = "3", Href = "/groups", IconName = IconName.Table, Text = "Group"},
+                       new NavItem { Id = "2", Href = "/users", IconName = IconName.PersonFill, Text = "User"},
+                       new NavItem { Id = "3", Href = "/groups", IconName = IconName.PeopleFill, Text = "Group"},
                    };
 
         return navItems;

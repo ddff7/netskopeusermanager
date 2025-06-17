@@ -38,7 +38,3 @@ The application is built using:
 - .NET 8
 - Blazor Server
 - Bootstrap for styling
-
-## License
-
-MIT 
