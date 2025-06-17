@@ -34,6 +34,11 @@ namespace NsUserManager
             {
                 var samlConfig = builder.Configuration.GetSection("Saml");
                 options.SPOptions.EntityId = new Sustainsys.Saml2.Metadata.EntityId(samlConfig["EntityId"]);
+                options.Notifications.GetPublicOrigin = context =>
+                {
+                    Uri updated = new UriBuilder(context.ApplicationUrl.Scheme, context.ApplicationUrl.Host, context.ApplicationUrl.Port).Uri;
+                    return updated;
+                };
                 options.IdentityProviders.Add(
                     new Sustainsys.Saml2.IdentityProvider(
                         new Sustainsys.Saml2.Metadata.EntityId(samlConfig["IdpId"]),
