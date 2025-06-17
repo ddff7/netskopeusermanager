@@ -1,0 +1,202 @@
+@page "/groups"
+@using BlazorBootstrap
+@using NsUserManager.Models
+@using NsUserManager.Services
+@inject IScimService ScimService
+
+<PageTitle>Groups</PageTitle>
+
+<h1>Groups Management</h1>
+
+<p>Manage your Netskope groups here.</p>
+
+<Toasts class="p-3" Messages="messages" Placement="ToastsPlacement.TopRight" />
+
+<ConfirmDialog @ref="dialog" />
+
+<Modal @ref="modal" UseStaticBackdrop="true" CloseOnEscape="false" Title="Add new group">
+    <BodyTemplate>
+        <EditForm Model="editingGroup" OnValidSubmit="ShowConfirmationDialog">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Display Name</label>
+                <input type="text" class="form-control" @bind="editingGroup.DisplayName" />
+                <ValidationMessage For="@(() => editingGroup.DisplayName)" />
+            </div>
+            <!-- Additional fields for group members can be added here -->
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+</Modal>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateDialog">Add New Group</button>
+</div>
+
+@if (isLoadingGroups)
+{
+    <p>Loading groups...</p>
+}
+else if (_groups == null)
+{
+    <p class="text-danger">Failed to load groups.</p>
+}
+else if (_groups.Count == 0)
+{
+    <p class="text-warning">No groups available. Please create a new group.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Netskope Id</th>
+                <th>Display Name</th>
+                <th>External Id</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var group in _groups)
+            {
+                <tr>
+                    <td>@group.Id</td>
+                    <td>@group.DisplayName</td>
+                    <td>@group.ExternalId</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => ShowEditDialog(group)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteGroup(group)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ConfirmDialog dialog = default!;
+    private Modal modal = default!;
+    private ScimGroup editingGroup = new();
+    private List<ScimGroup>? _groups;
+    private List<ToastMessage> messages = new List<ToastMessage>();
+    private bool isLoadingGroups = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGroups();
+    }
+
+    private async Task LoadGroups()
+    {
+        isLoadingGroups = true;
+        try
+        {
+            _groups = await ScimService.GetGroupsAsync();
+        }
+        finally
+        {
+            isLoadingGroups = false;
+        }
+    }
+
+    private async Task ShowCreateDialog()
+    {
+        editingGroup = new ScimGroup();
+        await modal.ShowAsync();
+    }
+
+    private async Task ShowEditDialog(ScimGroup group)
+    {
+        editingGroup = new ScimGroup
+        {
+            Id = group.Id,
+            DisplayName = group.DisplayName,
+            Members = group.Members.ToList()
+        };
+        await modal.ShowAsync();
+    }
+
+    private async Task ShowConfirmationDialog()
+    {
+        var confirmation = await dialog.ShowAsync(
+            title: "Are you sure you want to save this group?",
+            message1: "This will save the group details.",
+            message2: "Do you want to proceed?");
+
+        if (confirmation)
+        {
+            await HandleValidSubmit();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(editingGroup.Id))
+            {
+                await ScimService.CreateGroupAsync(new AddScimGroup() { DisplayName = editingGroup.DisplayName });
+                messages.Add(new ToastMessage
+                {
+                    Message = "Group created successfully.",
+                    Type = ToastType.Success
+                });
+            }
+            else
+            {
+                await ScimService.UpdateGroupAsync(editingGroup.Id, editingGroup);
+                messages.Add(new ToastMessage
+                {
+                    Message = "Group updated successfully.",
+                    Type = ToastType.Success
+                });
+            }
+
+            await LoadGroups(); // Refresh the group list
+            await modal.HideAsync();
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new ToastMessage
+            {
+                Message = $"Error saving group: {ex.Message}",
+                Type = ToastType.Danger
+            });
+        }
+    }
+
+    private async Task DeleteGroup(ScimGroup group)
+    {
+        var confirmation = await dialog.ShowAsync(
+            title: "Are you sure you want to delete this group?",
+            message1: "This will delete the group permanently.",
+            message2: group.DisplayName);
+
+        if (confirmation)
+        {
+            try
+            {
+                await ScimService.DeleteGroupAsync(group.Id);
+                await LoadGroups();
+
+                messages.Add(new ToastMessage
+                {
+                    Message = "Group deleted successfully.",
+                    Type = ToastType.Success
+                });
+            }
+            catch (Exception ex)
+            {
+                messages.Add(new ToastMessage
+                {
+                    Message = $"Error deleting group: {ex.Message}",
+                    Type = ToastType.Danger
+                });
+            }
+        }
+    }
+}
