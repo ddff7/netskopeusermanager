@@ -1,5 +1,6 @@
 ﻿@using BlazorBootstrap
 @using Microsoft.AspNetCore.Components.Routing
+@using System.Security.Claims
 @inherits LayoutComponentBase
 
 <div class="bb-page">
@@ -21,6 +22,25 @@
     Sidebar sidebar;
     IEnumerable<NavItem> navItems;
 
+    [Inject]
+    private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
+
+    private ClaimsPrincipal User { get; set; }
+
+    private string _displayName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User;
+
+        var displayNameClaim = $"{User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value} {User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value}";
+        if (string.IsNullOrWhiteSpace(displayNameClaim))
+            _displayName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? User.Identity.Name;
+        else
+            _displayName = displayNameClaim;
+    }
+
     private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
     {
         if (navItems is null)
@@ -37,6 +57,12 @@
                        new NavItem { Id = "2", Href = "/users", IconName = IconName.PersonFill, Text = "User"},
                        new NavItem { Id = "3", Href = "/groups", IconName = IconName.PeopleFill, Text = "Group"},
                    };
+
+        if (User?.Identity?.IsAuthenticated == true)
+        {
+            navItems = navItems.Prepend(new NavItem { Match = NavLinkMatch.All });
+            navItems = navItems.Prepend(new NavItem { Id = "4", IconName = IconName.Power, Text = _displayName, Match = NavLinkMatch.All });
+        }
 
         return navItems;
     }

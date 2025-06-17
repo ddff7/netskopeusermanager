@@ -1,5 +1,7 @@
 @page "/groups"
+@attribute [Authorize]
 @using BlazorBootstrap
+@using Microsoft.AspNetCore.Authorization
 @using NsUserManager.Models
 @using NsUserManager.Services
 @inject IScimService ScimService

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using NsUserManager.Components;
 using NsUserManager.Services;
+using System.Security.Claims;
 
 namespace NsUserManager
 {
@@ -16,12 +18,37 @@ namespace NsUserManager
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
+            builder.Services.AddCascadingAuthenticationState();
+
             builder.Services.AddHttpClient();
             builder.Services.AddBlazorBootstrap();
+
+            // Add SAML authentication
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+                options.DefaultChallengeScheme = "Saml2";
+            })
+            .AddCookie("Cookies")
+            .AddSaml2(options =>
+            {
+                var samlConfig = builder.Configuration.GetSection("Saml");
+                options.SPOptions.EntityId = new Sustainsys.Saml2.Metadata.EntityId(samlConfig["EntityId"]);
+                options.IdentityProviders.Add(
+                    new Sustainsys.Saml2.IdentityProvider(
+                        new Sustainsys.Saml2.Metadata.EntityId(samlConfig["IdpId"]),
+                        options.SPOptions)
+                    {
+                        MetadataLocation = samlConfig["MetadataUrl"],
+                        LoadMetadata = true,
+                        AllowUnsolicitedAuthnResponse = false
+                    });
+            });
 
             if (builder.Environment.IsDevelopment())
             {
                 builder.Services.AddScoped<IScimService, MockScimService>();
+                //builder.Services.AddScoped<AuthenticationStateProvider, MockAuthenticationStateProvider>();
             }
             else
             {
@@ -43,10 +70,29 @@ namespace NsUserManager
             app.UseStaticFiles();
             app.UseAntiforgery();
 
+            // Add authentication middleware
+            app.UseAuthentication();
+            app.UseAuthorization();
+
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 
             app.Run();
+        }
+    }
+
+    public class MockAuthenticationStateProvider : AuthenticationStateProvider
+    {
+        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+        {
+            var identity = new ClaimsIdentity(new[]
+            {
+            new Claim(ClaimTypes.Name, "DevUser"),
+            new Claim(ClaimTypes.Role, "Admin")
+        }, "mock");
+
+            var user = new ClaimsPrincipal(identity);
+            return Task.FromResult(new AuthenticationState(user));
         }
     }
 }

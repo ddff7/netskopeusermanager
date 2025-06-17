@@ -22,6 +22,10 @@ ENV APPSETTINGS__Netskope__ScimBaseUrl=
 ENV APPSETTINGS__Netskope__ApiToken=
 ENV APPSETTINGS__Netskope__ExternalIdPrefix=netskope-manager-
 
+ENV APPSETTINGS__Saml__EntityId=
+ENV APPSETTINGS__Saml__IdpId=
+ENV APPSETTINGS__Saml__MetadataUrl=
+
 # Expose the port your application runs on
 EXPOSE 8080
 
